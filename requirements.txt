@@ -1,0 +1,17 @@
+requests
+pandas
+numpy
+python-dotenv
+prophet
+xgboost
+shap
+scikit-learn
+matplotlib
+seaborn
+plotly
+folium
+streamlit
+streamlit-folium
+jupyter
+ipykernel
+schedule
