@@ -47,7 +47,7 @@ def now_utc():
     return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
 
-# ── AQI — OpenWeather Air Pollution API (unchanged) ────────────────────────
+#AQI collection from OpenWeather
 
 def fetch_aqi_for_city(city, lat, lng, days):
     end_ts   = int(datetime.now(timezone.utc).timestamp())
@@ -93,7 +93,7 @@ def fetch_aqi_for_city(city, lat, lng, days):
     return rows
 
 
-# ── Weather — Open-Meteo (historical, hourly, free, no key) ───────────────
+#Weather collection from Open-Meteo
 
 def fetch_weather_history(city, lat, lng, days):
     """Pulls hourly weather for the past `days` days. ~2 day lag for data availability."""
@@ -195,7 +195,7 @@ def fetch_weather_current(city, lat, lng):
     }
 
 
-# ── Main ───────────────────────────────────────────────────────────────────
+#Main
 
 def main():
     if not OPENWEATHER_API_KEY:
@@ -207,7 +207,7 @@ def main():
     is_first_run = history_days == 180
 
     print("\n" + "=" * 55)
-    print(f"VAYU — {'first run: ' + str(history_days) + ' days history' if is_first_run else f'updating last {history_days} days'}")
+    print(f"VAYU - {'first run: ' + str(history_days) + ' days history' if is_first_run else f'updating last {history_days} days'}")
     print("=" * 55)
 
     total_aqi, total_wx = 0, 0

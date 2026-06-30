@@ -1,13 +1,4 @@
 # src/features.py
-"""
-Reads from   : data/vayu_clean.db
-Writes to    : data/vayu_clean.db  (new table: features)
-
-Builds the final ML-ready dataset using an EXACT timestamp merge
-(both AQI and weather are now genuine hourly series from the same grid).
-
-Run: python src/features.py
-"""
 
 import os
 import sqlite3
@@ -26,7 +17,7 @@ AQI_CATEGORY_MAP = {
 }
 
 
-# ── Load ───────────────────────────────────────────────────────────────────
+#Load cleaned AQI and weather tables
 
 def load_clean_tables():
     conn = sqlite3.connect(CLEAN_DB)
@@ -36,7 +27,7 @@ def load_clean_tables():
     return aqi, wx
 
 
-# ── Merge (exact timestamp match) ───────────────────────────────────────
+#merge AQI and weather on exact timestamp match (no approximation)
 
 def merge_aqi_weather(aqi, wx):
     print("\n── Merging AQI + Weather (exact timestamp match) " + "─" * 5)
@@ -62,7 +53,7 @@ def merge_aqi_weather(aqi, wx):
     return merged
 
 
-# ── Time-based features ───────────────────────────────────────────────────
+#Time based features
 
 def add_time_features(df):
     print("\n── Adding time-based features " + "─" * 25)
@@ -74,7 +65,7 @@ def add_time_features(df):
     return df
 
 
-# ── Lag features ──────────────────────────────────────────────────────────
+#Lag features (per city)
 
 def add_lag_features(df):
     print("\n── Adding lag features (per city) " + "─" * 20)
@@ -88,7 +79,7 @@ def add_lag_features(df):
     return df
 
 
-# ── Rolling averages ──────────────────────────────────────────────────────
+#Rolling averages (per city)
 
 def add_rolling_features(df):
     print("\n── Adding rolling averages (per city) " + "─" * 17)
@@ -107,7 +98,7 @@ def add_rolling_features(df):
     return df
 
 
-# ── Target label ───────────────────────────────────────────────────────────
+#Target label (next day's AQI category)
 
 def add_target_label(df):
     print("\n── Creating next-day AQI target label " + "─" * 19)
@@ -123,7 +114,7 @@ def add_target_label(df):
     return df
 
 
-# ── Save ───────────────────────────────────────────────────────────────────
+#Save
 
 def save_features(df):
     conn = sqlite3.connect(CLEAN_DB)
@@ -132,7 +123,7 @@ def save_features(df):
     print(f"\n  Saved {len(df):,} rows to table: features (in vayu_clean.db)")
 
 
-# ── Main ───────────────────────────────────────────────────────────────────
+#main
 
 def main():
     if not os.path.exists(CLEAN_DB):
@@ -140,7 +131,7 @@ def main():
         return
 
     print("=" * 55)
-    print("VAYU — Feature Engineering Pipeline")
+    print("VAYU - Feature Engineering Pipeline")
     print("=" * 55)
 
     aqi, wx = load_clean_tables()
