@@ -1,3 +1,5 @@
+# src/collect.py
+
 from dotenv import load_dotenv
 import os
 import sys
@@ -5,7 +7,6 @@ import requests
 import time
 from datetime import datetime, timedelta, timezone
 
-#Importing Database Helpers, i.e. sibling file database.py
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from database import (
     init_db, get_history_days,
@@ -16,7 +17,9 @@ from database import (
 load_dotenv()
 
 OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY")
-OW_BASE             = "https://api.openweathermap.org/data/2.5"
+OW_BASE          = "https://api.openweathermap.org/data/2.5"
+OPENMETEO_ARCHIVE = "https://archive-api.open-meteo.com/v1/archive"
+OPENMETEO_FORECAST = "https://api.open-meteo.com/v1/forecast"
 
 CITIES = {
     "Delhi":       (28.6139, 77.2090),
@@ -36,14 +39,7 @@ CITIES = {
     "Chandigarh":  (30.7333, 76.7794),
 }
 
-#General mapping of city names to OpenWeatherMap names
-OWM_CITY_MAP = {
-    "Bengaluru": "Bangalore",
-    "Kolkata":   "Calcutta",
-}
 
-
-#Helpers
 def unix_to_iso(ts):
     return datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
@@ -51,14 +47,9 @@ def now_utc():
     return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
 
-#AQI data fetching through OWM Air Pollution API
+# ── AQI — OpenWeather Air Pollution API (unchanged) ────────────────────────
 
 def fetch_aqi_for_city(city, lat, lng, days):
-    """
-    Pulls hourly AQI + pollutant history for the past `days` days.
-    Endpoint: /data/2.5/air_pollution/history
-    Returns a list of row dicts.
-    """
     end_ts   = int(datetime.now(timezone.utc).timestamp())
     start_ts = int((datetime.now(timezone.utc) - timedelta(days=days)).timestamp())
     fetched  = now_utc()
@@ -66,18 +57,12 @@ def fetch_aqi_for_city(city, lat, lng, days):
     try:
         r = requests.get(
             f"{OW_BASE}/air_pollution/history",
-            params={
-                "lat":   lat,
-                "lon":   lng,
-                "start": start_ts,
-                "end":   end_ts,
-                "appid": OPENWEATHER_API_KEY
-            },
+            params={"lat": lat, "lon": lng, "start": start_ts, "end": end_ts,
+                     "appid": OPENWEATHER_API_KEY},
             timeout=30
         )
         r.raise_for_status()
         records = r.json().get("list", [])
-
     except requests.exceptions.Timeout:
         print(f"  [ERROR] Timeout fetching AQI for {city}.")
         return []
@@ -85,8 +70,7 @@ def fetch_aqi_for_city(city, lat, lng, days):
         print(f"  [ERROR] No internet connection for {city}.")
         return []
     except requests.exceptions.HTTPError as e:
-        status = e.response.status_code if e.response is not None else "?"
-        print(f"  [ERROR] HTTP {status} for {city} AQI: {e}")
+        print(f"  [ERROR] HTTP error for {city} AQI: {e}")
         return []
     except Exception as e:
         print(f"  [ERROR] Unexpected error for {city} AQI: {e}")
@@ -100,142 +84,164 @@ def fetch_aqi_for_city(city, lat, lng, days):
     for rec in records:
         comp = rec.get("components", {})
         rows.append({
-            "city":       city,
-            "latitude":   lat,
-            "longitude":  lng,
-            "aqi":        rec.get("main", {}).get("aqi"),
-            "pm25":       comp.get("pm2_5"),   # note: API uses pm2_5
-            "pm10":       comp.get("pm10"),
-            "no2":        comp.get("no2"),
-            "o3":         comp.get("o3"),
-            "timestamp":  unix_to_iso(rec["dt"]),
-            "fetched_at": fetched
+            "city": city, "latitude": lat, "longitude": lng,
+            "aqi": rec.get("main", {}).get("aqi"),
+            "pm25": comp.get("pm2_5"), "pm10": comp.get("pm10"),
+            "no2": comp.get("no2"), "o3": comp.get("o3"),
+            "timestamp": unix_to_iso(rec["dt"]), "fetched_at": fetched
         })
-
     return rows
 
 
-#Weather data fetching through OWM Current Weather API
-def fetch_weather_for_city(city):
-    """
-    Pulls current weather for a city.
-    Endpoint: /data/2.5/weather
-    Returns a row dict or None on failure.
-    """
-    owm_name = OWM_CITY_MAP.get(city, city)
-    fetched  = now_utc()
+# ── Weather — Open-Meteo (historical, hourly, free, no key) ───────────────
+
+def fetch_weather_history(city, lat, lng, days):
+    """Pulls hourly weather for the past `days` days. ~2 day lag for data availability."""
+    end_date   = (datetime.now(timezone.utc) - timedelta(days=2)).strftime("%Y-%m-%d")
+    start_date = (datetime.now(timezone.utc) - timedelta(days=days)).strftime("%Y-%m-%d")
+    fetched    = now_utc()
 
     try:
         r = requests.get(
-            f"{OW_BASE}/weather",
+            OPENMETEO_ARCHIVE,
             params={
-                "q":     f"{owm_name},IN",
-                "appid": OPENWEATHER_API_KEY,
-                "units": "metric"
+                "latitude": lat, "longitude": lng,
+                "start_date": start_date, "end_date": end_date,
+                "hourly": "temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation",
+                "wind_speed_unit": "ms",
+                "timezone": "UTC"
+            },
+            timeout=30
+        )
+        r.raise_for_status()
+        data = r.json().get("hourly", {})
+    except requests.exceptions.Timeout:
+        print(f"  [ERROR] Timeout fetching weather history for {city}.")
+        return []
+    except requests.exceptions.ConnectionError:
+        print(f"  [ERROR] No internet connection for {city}.")
+        return []
+    except requests.exceptions.HTTPError as e:
+        print(f"  [ERROR] HTTP error for {city} weather history: {e}")
+        return []
+    except Exception as e:
+        print(f"  [ERROR] Unexpected error for {city} weather history: {e}")
+        return []
+
+    times = data.get("time", [])
+    if not times:
+        print(f"  No weather history returned for {city}.")
+        return []
+
+    rows = []
+    for i, t in enumerate(times):
+        rows.append({
+            "city": city,
+            "temperature_c":  data["temperature_2m"][i],
+            "humidity_pct":   data["relative_humidity_2m"][i],
+            "wind_speed_ms":  data["wind_speed_10m"][i],
+            "wind_deg":       data["wind_direction_10m"][i],
+            "rainfall_1h_mm": data["precipitation"][i] or 0.0,
+            "condition":      None,
+            "timestamp":      t.replace("T", " ") + ":00",
+            "fetched_at":     fetched
+        })
+    return rows
+
+
+def fetch_weather_current(city, lat, lng):
+    """Pulls the current live weather snapshot."""
+    fetched = now_utc()
+    try:
+        r = requests.get(
+            OPENMETEO_FORECAST,
+            params={
+                "latitude": lat, "longitude": lng,
+                "current": "temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation",
+                "wind_speed_unit": "ms",
+                "timezone": "UTC"
             },
             timeout=15
         )
         r.raise_for_status()
-        data = r.json()
-
-        return {
-            "city":           city,
-            "temperature_c":  data.get("main", {}).get("temp"),
-            "humidity_pct":   data.get("main", {}).get("humidity"),
-            "wind_speed_ms":  data.get("wind", {}).get("speed"),
-            "wind_deg":       data.get("wind", {}).get("deg"),
-            "rainfall_1h_mm": data.get("rain", {}).get("1h", 0.0),
-            "condition":      data.get("weather", [{}])[0].get("description"),
-            "timestamp":      unix_to_iso(data.get("dt", 0)),
-            "fetched_at":     fetched
-        }
-
+        cur = r.json().get("current", {})
     except requests.exceptions.Timeout:
-        print(f"  [ERROR] Timeout for {city} weather.")
+        print(f"  [ERROR] Timeout fetching current weather for {city}.")
         return None
     except requests.exceptions.ConnectionError:
-        print(f"  [ERROR] No internet connection for {city} weather.")
+        print(f"  [ERROR] No internet connection for {city}.")
         return None
     except requests.exceptions.HTTPError as e:
-        status = e.response.status_code if e.response is not None else "?"
-        if status == 401:
-            print(f"  [ERROR] Invalid API key.")
-        elif status == 404:
-            print(f"  [ERROR] City not found on OpenWeather: {owm_name},IN")
-        else:
-            print(f"  [ERROR] HTTP {status} for {city} weather: {e}")
+        print(f"  [ERROR] HTTP error for {city} current weather: {e}")
         return None
     except Exception as e:
-        print(f"  [ERROR] Unexpected error for {city} weather: {e}")
+        print(f"  [ERROR] Unexpected error for {city} current weather: {e}")
         return None
 
+    if not cur:
+        return None
+
+    ts = cur.get("time", "").replace("T", " ")
+    return {
+        "city": city,
+        "temperature_c":  cur.get("temperature_2m"),
+        "humidity_pct":   cur.get("relative_humidity_2m"),
+        "wind_speed_ms":  cur.get("wind_speed_10m"),
+        "wind_deg":       cur.get("wind_direction_10m"),
+        "rainfall_1h_mm": cur.get("precipitation") or 0.0,
+        "condition":      None,
+        "timestamp":      ts + ":00" if len(ts) == 16 else ts,
+        "fetched_at":     fetched
+    }
+
+
+# ── Main ───────────────────────────────────────────────────────────────────
 
 def main():
     if not OPENWEATHER_API_KEY:
         print("ERROR: OPENWEATHER_API_KEY not found in .env file.")
         return
 
-    # Initialise DB (creates tables if they don't exist)
     init_db()
-
     history_days = get_history_days()
     is_first_run = history_days == 180
 
-    #AQI collection
     print("\n" + "=" * 55)
-    if is_first_run:
-        print(f"VAYU — first run: pulling {history_days} days of AQI history")
-        print("  (This may take a minute — runs faster after this)")
-    else:
-        print(f"VAYU — updating: pulling last {history_days} days of AQI data")
+    print(f"VAYU — {'first run: ' + str(history_days) + ' days history' if is_first_run else f'updating last {history_days} days'}")
     print("=" * 55)
 
-    total_aqi = 0
+    total_aqi, total_wx = 0, 0
 
     for city, (lat, lng) in CITIES.items():
         print(f"\n[AQI] {city}")
-        rows = fetch_aqi_for_city(city, lat, lng, history_days)
-
-        if rows:
-            inserted = insert_aqi_rows(rows)
+        aqi_rows = fetch_aqi_for_city(city, lat, lng, history_days)
+        if aqi_rows:
+            inserted = insert_aqi_rows(aqi_rows)
             total_aqi += inserted
-            print(f"  Fetched {len(rows)} records — {inserted} new saved to DB")
-        else:
-            print(f"  Skipped.")
-
-        time.sleep(1)  # be polite to the API
-
-    #Weather collection
-    print("\n" + "=" * 55)
-    print("VAYU — collecting current weather")
-    print("=" * 55)
-
-    total_wx = 0
-
-    for city in CITIES:
-        print(f"\n[Weather] {city}")
-        row = fetch_weather_for_city(city)
-
-        if row:
-            inserted = insert_weather_rows([row])
-            total_wx += inserted
-            print(
-                f"  {row['temperature_c']}°C  |  "
-                f"Wind {row['wind_speed_ms']} m/s  |  "
-                f"Humidity {row['humidity_pct']}%  |  "
-                f"Rain {row['rainfall_1h_mm']} mm"
-                + ("  [saved]" if inserted else "  [duplicate, skipped]")
-            )
-        else:
-            print(f"  Skipped.")
-
+            print(f"  Fetched {len(aqi_rows)} — {inserted} new saved")
         time.sleep(1)
 
-    #Summary
+        print(f"[Weather History] {city}")
+        wx_hist_rows = fetch_weather_history(city, lat, lng, history_days)
+        if wx_hist_rows:
+            inserted = insert_weather_rows(wx_hist_rows)
+            total_wx += inserted
+            print(f"  Fetched {len(wx_hist_rows)} — {inserted} new saved")
+        time.sleep(1)
+
+        print(f"[Weather Current] {city}")
+        wx_cur = fetch_weather_current(city, lat, lng)
+        if wx_cur:
+            inserted = insert_weather_rows([wx_cur])
+            total_wx += inserted
+            print(f"  {wx_cur['temperature_c']}°C  Wind {wx_cur['wind_speed_ms']} m/s"
+                  + ("  [saved]" if inserted else "  [duplicate]"))
+        time.sleep(1)
+
     print("\n" + "=" * 55)
     print("Done.")
-    print(f"  AQI rows inserted this run     : {total_aqi}")
-    print(f"  Weather rows inserted this run : {total_wx}")
+    print(f"  AQI rows inserted     : {total_aqi}")
+    print(f"  Weather rows inserted : {total_wx}")
     print_summary()
     print("=" * 55)
 

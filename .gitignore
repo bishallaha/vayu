@@ -8,3 +8,5 @@ models/
 .venv/
 src/inspect_db.py
 data/vayu_clean.db
+src/collect_old.py
+src/verifying_timestamps.py
