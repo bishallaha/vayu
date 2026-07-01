@@ -68,9 +68,9 @@ def get_history_days():
         c.execute("SELECT COUNT(*) FROM aqi_readings")
         count = c.fetchone()[0]
         conn.close()
-        return 180 if count == 0 else 7
+        return 365 if count == 0 else 7
     except Exception:
-        return 180  # table doesn't exist yet = first run
+        return 365  # table doesn't exist yet = first run
 
 
 def insert_aqi_rows(rows):
