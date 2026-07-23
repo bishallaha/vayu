@@ -128,14 +128,32 @@ CHART_BASE = dict(
     paper_bgcolor="white", plot_bgcolor="white",
     font=dict(family="Inter, sans-serif"),
 )
+
 Y_AQI = dict(
-    showgrid=True, gridcolor="#F3F4F6", title=None,
-    range=[0.5, 5.5], tickvals=[1,2,3,4,5],
-    ticktext=["Good","Fair","Moderate","Poor","Hazardous"],
-    color="#9CA3AF", tickfont=dict(size=11, family="Inter"),
+    showgrid=True,
+    gridcolor="#F3F4F6",
+    title=None,
+    range=[0.5, 5.5],
+    tickvals=[1, 2, 3, 4, 5],
+    ticktext=["Good", "Fair", "Moderate", "Poor", "Hazardous"],
+    color="#9C9C9C",
+    tickfont=dict(
+        size=11,
+        family="Inter",
+        color="#9C9C9C",
+    ),
 )
-X_BASE = dict(showgrid=False, color="#9CA3AF", title=None,
-              tickfont=dict(size=11, family="Inter"))
+
+X_BASE = dict(
+    showgrid=False,
+    color="#9C9C9C",
+    title=None,
+    tickfont=dict(
+        size=11,
+        family="Inter",
+        color="#9C9C9C",
+    ),
+)
 
 
 def chart_forecast(df, model_name):
@@ -203,8 +221,12 @@ def chart_shap(shap_df):
         xaxis=dict(showgrid=False, showticklabels=False, zeroline=False),
         yaxis=dict(
             showgrid=False,
-            color="#374151",
-            tickfont=dict(size=12, family="Inter"),
+            color="#9C9C9C",
+            tickfont=dict(
+                size=12,
+                family="Inter",
+                color="#9C9C9C",
+            ),
         ),
         bargap=0.38,
     )
@@ -317,11 +339,12 @@ def chart_heatmap(hm):
         **layout,
         height=260,
         xaxis=dict(
-            tickfont=dict(size=10, family="Inter"),
-            side="bottom",
+            tickfont=dict(size=10, family="Inter", color="#9C9C9C",),
+            side="bottom", color="#9C9C9C",
         ),
         yaxis=dict(
-            tickfont=dict(size=11, family="Inter"),
+            tickfont=dict(size=11, family="Inter", color="#9C9C9C",),
+            color="#9C9C9C",
         ),
     )
     return fig
@@ -351,14 +374,23 @@ def chart_monthly(mt):
         height=260,
         xaxis=dict(
             showgrid=False,
-            color="#9CA3AF",
+            color="#9C9C9C",
+            tickfont=dict(
+                size=11,
+                family="Inter",
+                color="#9C9C9C",
+            ),
         ),
         yaxis=dict(
             showgrid=True,
             gridcolor="#F3F4F6",
             title=None,
-            color="#9CA3AF",
-            tickfont=dict(size=11, family="Inter"),
+            color="#9C9C9C",
+            tickfont=dict(
+                size=11,
+                family="Inter",
+                color="#9C9C9C",
+            ),
         ),
         yaxis2=dict(
             title=None,
@@ -386,7 +418,7 @@ def chart_zone_bar(summary):
         marker_color=[ZONE_COLORS.get(z, "#9CA3AF") for z in summary["zone"]],
         text=[f"{v:.0f}%" for v in summary["avg_risk"]],
         textposition="outside",
-        textfont=dict(size=12, family="Inter", color="#374151"),
+        textfont=dict(size=12, family="Inter", color="#8C8C8C"),
         hovertemplate="<b>%{x}</b><br>Avg Risk: %{y:.1f}%<extra></extra>",
     ))
     layout = CHART_BASE.copy()
@@ -397,14 +429,19 @@ def chart_zone_bar(summary):
         height=280,
         xaxis=dict(
             showgrid=False,
-            color="#374151",
+            color="#9C9C9C",
             tickfont=dict(size=12, family="Inter"),
         ),
         yaxis=dict(
             showgrid=True,
             gridcolor="#F3F4F6",
             title=None,
-            color="#9CA3AF",
+            color="#9C9C9C",
+            tickfont=dict(
+                size=11,
+                family="Inter",
+                color="#9C9C9C",
+            ),
         ),
         bargap=0.4,
     )
