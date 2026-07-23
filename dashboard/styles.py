@@ -417,5 +417,114 @@ div[data-testid="stButton"] > button[kind="secondary"] {
     color: rgba(17,24,39,.45) !important;
 }
 
+/* ── Multi-select (city comparison) ─────────────── */
+.stMultiSelect label {
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    color: #9CA3AF !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.08em !important;
+}
+.stMultiSelect > div > div {
+    border: 1px solid #E5E7EB !important;
+    border-radius: 10px !important;
+    background: white !important;
+}
+[data-baseweb="tag"] {
+    background: #EFF6FF !important;
+    border-radius: 8px !important;
+}
+[data-baseweb="tag"] span {
+    color: #2563EB !important;
+    font-weight: 500 !important;
+    font-size: 12px !important;
+}
+
+/* ── Zone badge ──────────────────────────────────── */
+.zone-badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 100px;
+    color: white;
+    display: inline-block;
+    letter-spacing: 0.02em;
+}
+
+/* ── Best time cards ─────────────────────────────── */
+.time-card {
+    border-radius: 14px;
+    padding: 20px 22px;
+    border: 1px solid;
+    height: 100%;
+}
+.time-card-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    margin: 0 0 10px;
+}
+.time-card-range {
+    font-size: 22px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 4px;
+    letter-spacing: -0.01em;
+}
+.time-card-aqi {
+    font-size: 12px;
+    color: #6B7280;
+    margin: 0;
+}
+.time-good { background: #F0FDF4; border-color: #BBF7D0; }
+.time-good .time-card-label { color: #166534; }
+.time-bad  { background: #FEF2F2; border-color: #FECACA; }
+.time-bad  .time-card-label { color: #991B1B; }
+
+/* ── Leaderboard rows ─────────────────────────────── */
+.lb-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: white;
+    border: 1px solid #E5E7EB;
+    border-radius: 12px;
+    padding: 13px 16px;
+    margin-bottom: 8px;
+    transition: box-shadow 0.15s ease;
+}
+.lb-row:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
+.lb-rank {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #F3F4F6;
+    color: #374151;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.lb-info { flex: 1; min-width: 0; }
+.lb-city { font-size: 14px; font-weight: 600; color: #111827; margin: 0; }
+.lb-sub  { font-size: 11px; color: #9CA3AF; margin: 2px 0 0; }
+.lb-risk {
+    font-size: 13px;
+    font-weight: 700;
+    width: 46px;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+/* ── Role badge / caption ─────────────────────────── */
+.role-caption {
+    font-size: 12px;
+    color: #9CA3AF;
+    margin: -8px 0 20px;
+}
+.role-caption b { color: #6B7280; }
+
 </style>
 """

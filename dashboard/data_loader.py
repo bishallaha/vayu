@@ -2,7 +2,7 @@
 import os, sqlite3
 import pandas as pd
 import requests
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -31,6 +31,31 @@ CITY_COORDS = {
 
 AQI_LABELS = {1: "Good", 2: "Fair", 3: "Moderate", 4: "Poor", 5: "Hazardous"}
 AQI_COLORS = {1: "#00E400", 2: "#FFFF00", 3: "#FF7E00", 4: "#FF0000", 5: "#8F3F97"}
+
+# ── Zonal classification ────────────────────────────────────────────────────
+CITY_ZONE = {
+    "Delhi": "North", "Jaipur": "North", "Chandigarh": "North",
+    "Bengaluru": "South", "Chennai": "South", "Hyderabad": "South",
+    "Mumbai": "West", "Pune": "West", "Ahmedabad": "West",
+    "Kolkata": "East", "Bhubaneswar": "East", "Patna": "East",
+    "Guwahati": "Northeast", "Shillong": "Northeast",
+    "Bhopal": "Central",
+}
+
+ZONE_COLORS = {
+    "North":     "#2563EB",
+    "South":     "#059669",
+    "East":      "#D97706",
+    "West":      "#DC2626",
+    "Northeast": "#7C3AED",
+    "Central":   "#0891B2",
+}
+
+IST_OFFSET = timedelta(hours=5, minutes=30)
+
+def to_ist(ts):
+    return ts + IST_OFFSET
+
 
 def _query(sql, params=()):
     conn = sqlite3.connect(CLEAN_DB)
@@ -105,7 +130,15 @@ def get_model_metrics():
         return pd.DataFrame()
 
 def get_comparison_data(city1, city2):
-    return _query("""
+    """Legacy 2-city comparison — kept for compatibility."""
+    return get_comparison_data_multi([city1, city2])
+
+def get_comparison_data_multi(cities):
+    """Comparison data for 2-5 cities."""
+    if not cities:
+        return pd.DataFrame()
+    placeholders = ",".join(["?"] * len(cities))
+    query = f"""
         SELECT h.city, h.aqi, h.pm25, h.no2, h.o3, h.risk_score,
                h.risk_label, h.aqi_label, h.aqi_color,
                h.general_advisory, h.flag_children, h.flag_elderly,
@@ -113,10 +146,11 @@ def get_comparison_data(city1, city2):
         FROM health_risk h
         INNER JOIN (
             SELECT city, MAX(timestamp) AS max_ts
-            FROM health_risk WHERE city IN (?,?)
+            FROM health_risk WHERE city IN ({placeholders})
             GROUP BY city
         ) latest ON h.city=latest.city AND h.timestamp=latest.max_ts
-    """, (city1, city2))
+    """
+    return _query(query, tuple(cities))
 
 def get_hourly_heatmap(city):
     return _query("""
@@ -166,3 +200,81 @@ def get_yesterday_aqi(city):
         (city,)
     )
     return float(df.iloc[-1]["aqi"]) if len(df) >= 24 else None
+
+
+# ── NEW: Zonal summary ──────────────────────────────────────────────────────
+
+def get_zone_summary():
+    """Returns (per-city df with zone column, aggregated zone summary df)."""
+    df = get_all_cities_latest()
+    if df.empty:
+        return df, pd.DataFrame()
+    df = df.copy()
+    df["zone"] = df["city"].map(CITY_ZONE).fillna("Other")
+
+    rows = []
+    for zone, g in df.groupby("zone"):
+        worst = g.loc[g["risk_score"].idxmax()]
+        best  = g.loc[g["risk_score"].idxmin()]
+        rows.append({
+            "zone":        zone,
+            "avg_aqi":     g["aqi"].mean(),
+            "avg_risk":    g["risk_score"].mean(),
+            "city_count":  len(g),
+            "worst_city":  worst["city"],
+            "worst_risk":  worst["risk_score"],
+            "best_city":   best["city"],
+            "best_risk":   best["risk_score"],
+        })
+    summary = pd.DataFrame(rows).sort_values("avg_risk", ascending=False).reset_index(drop=True)
+    return df, summary
+
+
+# ── NEW: City leaderboard ───────────────────────────────────────────────────
+
+def get_leaderboard():
+    """Returns (top5_cleanest_df, top5_most_polluted_df)."""
+    df = get_all_cities_latest()
+    if df.empty:
+        return df, df
+    cleanest = df.sort_values("risk_score").head(5).reset_index(drop=True)
+    dirtiest = df.sort_values("risk_score", ascending=False).head(5).reset_index(drop=True)
+    return cleanest, dirtiest
+
+
+# ── NEW: Best time to go outside ────────────────────────────────────────────
+
+def get_best_time_window(city):
+    """
+    Finds the cleanest and worst 3-hour rolling window in the next 24 hours
+    of forecast data. Returns None if no forecast is available.
+    """
+    df   = get_prophet_forecast(city)
+    ycol = "yhat"
+    if df.empty:
+        df   = get_xgb_forecast(city)
+        ycol = "predicted_aqi"
+    if df.empty:
+        return None
+
+    df = df.copy()
+    df["timestamp"] = pd.to_datetime(df["timestamp"])
+    df = df.sort_values("timestamp").head(24).reset_index(drop=True)
+
+    if len(df) < 3:
+        return None
+
+    df["roll3"] = df[ycol].rolling(3, min_periods=1).mean()
+    best_end  = df["roll3"].idxmin()
+    worst_end = df["roll3"].idxmax()
+    best_start  = max(0, best_end - 2)
+    worst_start = max(0, worst_end - 2)
+
+    return {
+        "best_start":  df.loc[best_start, "timestamp"],
+        "best_end":    df.loc[best_end, "timestamp"],
+        "best_aqi":    df.loc[best_start:best_end, ycol].mean(),
+        "worst_start": df.loc[worst_start, "timestamp"],
+        "worst_end":   df.loc[worst_end, "timestamp"],
+        "worst_aqi":   df.loc[worst_start:worst_end, ycol].mean(),
+    }
