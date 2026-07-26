@@ -6,6 +6,12 @@ import sys
 import requests
 import time
 from datetime import datetime, timedelta, timezone
+import streamlit as st
+import os
+
+def get_api_key():
+    # Works locally (.env) and on Streamlit Cloud (secrets)
+    return st.secrets.get("OPENWEATHER_API_KEY", os.getenv("OPENWEATHER_API_KEY"))
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from database import (
@@ -16,7 +22,7 @@ from database import (
 
 load_dotenv()
 
-OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY")
+OPENWEATHER_API_KEY = get_api_key()
 OW_BASE          = "https://api.openweathermap.org/data/2.5"
 OPENMETEO_ARCHIVE = "https://archive-api.open-meteo.com/v1/archive"
 OPENMETEO_FORECAST = "https://api.open-meteo.com/v1/forecast"

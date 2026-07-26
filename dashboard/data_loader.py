@@ -4,12 +4,18 @@ import pandas as pd
 import requests
 from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
+import streamlit as st
+import os
+
+def get_api_key():
+    # Works locally (.env) and on Streamlit Cloud (secrets)
+    return st.secrets.get("OPENWEATHER_API_KEY", os.getenv("OPENWEATHER_API_KEY"))
 
 load_dotenv()
 
 ROOT     = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CLEAN_DB = os.path.join(ROOT, "data", "vayu_clean.db")
-OW_KEY   = os.getenv("OPENWEATHER_API_KEY")
+OW_KEY   = get_api_key()
 
 CITY_COORDS = {
     "Ahmedabad":   (23.0225, 72.5714),
