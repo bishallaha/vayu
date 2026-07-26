@@ -360,13 +360,7 @@ div[role="radiogroup"] > label[data-checked="true"] {
     align-items:center !important;
 }
 
-[data-baseweb="select"] span{
-    display:flex !important;
-    align-items:center !important;
-    height:100% !important;
-    font-size:15px !important;
-    color:#111827 !important;
-}
+
 
 [data-baseweb="select"] input {
     font-size: 14px !important;
