@@ -520,5 +520,21 @@ div[data-testid="stButton"] > button[kind="secondary"] {
 }
 .role-caption b { color: #6B7280; }
 
+/* ===== Streamlit 1.58 Select Fix ===== */
+
+[data-baseweb="select"] input{
+    color:#111827 !important;
+    -webkit-text-fill-color:#111827 !important;
+    opacity:1 !important;
+}
+
+[data-baseweb="select"] input::placeholder{
+    color:#9CA3AF !important;
+}
+
+[data-baseweb="select"] button{
+    color:#6B7280 !important;
+}
+
 </style>
 """
