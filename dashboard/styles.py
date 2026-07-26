@@ -5,12 +5,6 @@ VAYU_CSS = """
 
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800;900&display=swap');
 
-@font-face {
-    font-family: "Orbitron";
-    font-weight: normal;
-    font-style: normal;
-}
-
 *, *::before, *::after { box-sizing: border-box; margin: 0; }
 
 html, body, [class*="css"], .stApp {
@@ -58,7 +52,7 @@ header {
 
 /* ── Brand / Header ─────────────────────────────── */
 .vayu-brand h1{
-    font-family:"Orbitron", sans-serif !important;
+    font-family:"Orbitron" !important;
     font-size:54px;
     font-weight:900;
     letter-spacing:2px;
