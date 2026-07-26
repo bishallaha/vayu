@@ -3,11 +3,10 @@
 VAYU_CSS = """
 <style>
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800;900&display=swap');
 
 @font-face {
-    font-family: "Brigends Expanded";
-    src: url("assets/fonts/BrigendsExpanded-Regular.otf") format("opentype");
+    font-family: "Orbitron";
     font-weight: normal;
     font-style: normal;
 }
@@ -59,10 +58,10 @@ header {
 
 /* ── Brand / Header ─────────────────────────────── */
 .vayu-brand h1{
-    font-family:"Brigends Expanded","Inter",sans-serif !important;
+    font-family:"Orbitron", sans-serif !important;
     font-size:54px;
-    font-weight:400;
-    letter-spacing:0;
+    font-weight:900;
+    letter-spacing:2px;
     line-height:0.95;
     margin-bottom:-2px;
 }
