@@ -452,7 +452,7 @@ def chart_zone_bar(summary):
 
 def build_map(cities_df, selected):
     m = folium.Map(location=[22.5, 82.0], zoom_start=5,
-                   tiles="CartoDB Positron", zoom_control=False,
+                   tiles="OpenStreetMap", zoom_control=False,
                    scrollWheelZoom=True, attributionControl=False)
 
     for _, row in cities_df.iterrows():
