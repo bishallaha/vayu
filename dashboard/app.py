@@ -499,8 +499,8 @@ def run_refresh():
         ("Cleaning database",             "src/clean.py"),
         ("Engineering features",          "src/features.py"),
         ("Updating forecasts",            "src/prophet_model.py"),
+        ("Updating XGBoost forecasts", "src/xgboost_regressor.py")
         ("Recalculating health risk",     "src/health_risk.py"),
-        ("Updating XGBoost forecasts", "src/xgboost_regressor.py"),
     ]
 
     env = os.environ.copy()
