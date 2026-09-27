@@ -500,6 +500,7 @@ def run_refresh():
         ("Engineering features",          "src/features.py"),
         ("Updating forecasts",            "src/prophet_model.py"),
         ("Recalculating health risk",     "src/health_risk.py"),
+        ("Updating XGBoost forecasts", "src/xgboost_regressor.py"),
     ]
 
     env = os.environ.copy()
