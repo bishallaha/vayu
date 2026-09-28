@@ -231,9 +231,6 @@ VAYU is a methodologically sound **prototype**, not a certified public health to
 
 ---
 
-## 👤 Author
-
-**Bishal Laha**
 Built as part of the IDEAS – ISI Kolkata Summer Internship 2026.
 GitHub: [@bishallaha](https://github.com/bishallaha)
 
