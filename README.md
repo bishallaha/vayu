@@ -2,7 +2,7 @@
 
 **AI-powered air quality monitoring, 48-hour forecasting, and explainable health risk prediction for 15 major Indian cities.**
 
-🔗 **Live Dashboard:** [YOUR-APP-NAME.streamlit.app](https://YOUR-APP-NAME.streamlit.app)
+🔗 **Live Dashboard:** [vayu-in.streamlit.app](https://vayu-in.streamlit.app)
 💻 **Source Code:** [github.com/bishallaha/vayu](https://github.com/bishallaha/vayu)
 
 > ### ⚠️ Read this before opening the dashboard
