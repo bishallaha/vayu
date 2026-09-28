@@ -1,41 +1,242 @@
-# VAYU – Air Quality Forecasting and Health Risk Assessment
+# VAYU — Real-Time Air Quality Intelligence for India
 
-VAYU aims to provide air quality and pollution-related information to help assess environmental conditions and their potential health impacts across several Indian cities. The data is used to predict future Air Quality Index (AQI) levels and interpret the risk levels of the AQI for people in several Indian cities. The project uses historical AQI data, weather data, machine learning, time-series forecasting, and Explainable Artificial Intelligence (XAI).
+**AI-powered air quality monitoring, 48-hour forecasting, and explainable health risk prediction for 15 major Indian cities.**
 
-The system employs two approaches to forecast the air quality index (AQI) for the the next 24 hours, namely Facebook Prophet and XGBoost Regressor. An automatic model selection algorithm evaluates the accuracy of these approaches for each city and selects the most accurate one for subsequent use. In addition to numerical forecasts, an XGBoost Classifier is used to predict the class of AQI, which can be Good, Fair, Moderate, Poor, or Hazardous. The contribution of each factor to the accuracy of forecasts is explained using SHAP (SHapley Additive Explanations) values.
+🔗 **Live Dashboard:** [YOUR-APP-NAME.streamlit.app](https://YOUR-APP-NAME.streamlit.app)
+💻 **Source Code:** [github.com/bishallaha/vayu](https://github.com/bishallaha/vayu)
 
-In addition to the prediction feature, the proposed system will provide a method for calculating health risk based on World Health Organization (WHO) air quality guidelines. It means that the pollution levels detected by the system will be automatically converted into a special index ranging from 0 to 100 (Health Risk Index). The index will display health-related recommendations for kids, elderly people, and individuals with respiratory diseases. It will also offer the calculation of the health risk based on WHO recommendation. It means that the pollution data detected by the system will be automatically converted into a special index, varying from 0 to 100 (Health Risk Index). This index will also provide information about health advice for children, elderly people, and people with respiratory diseases.
+> ### ⚠️ Read this before opening the dashboard
+> The live dashboard ships with a **pre-loaded snapshot of data**, so the numbers you see at first are placeholder data from the last deployment.
+> **Click the ↻ Refresh button (top right) to pull the latest data and update everything.**
+>
+> The refresh takes a few minutes because it runs the full pipeline: collect → clean → features → forecast → health risk.
+> Free-tier Streamlit apps also go to sleep after inactivity. If you see a sleep screen, click **"Yes, get this app back up!"** and wait about a minute.
 
+---
 
-## Features
+## 📌 Overview
 
-- Automated AQI and weather data collection
-- Data cleaning and preprocessing pipeline
-- Feature engineering using lag and rolling statistics
-- AQI forecasting using Prophet
-- AQI forecasting using XGBoost Regressor
-- Automatic best-model selection for each city
-- AQI category prediction using XGBoost Classifier
-- SHAP-based model explainability
-- WHO-aligned Health Risk Index (0–100)
-- Demographic-specific health advisories
-- SQLite database integration
-- Interactive dashboard (under development)
+Existing public tools such as the CPCB Sameer app show only *current* AQI. They give no forecast, no explanation of *why* pollution is high, and no guidance for vulnerable groups.
 
+VAYU closes that gap by combining live data engineering, time-series forecasting, machine learning classification, and explainable AI in one deployed platform. It answers four questions:
 
-## Technologies Used
+1. **How polluted is my city right now?**
+2. **Will it get worse in the next 48 hours?**
+3. **Why is the model predicting that?**
+4. **What should I do about it?**
 
-- Python
-- Pandas
-- NumPy
-- Scikit-learn
-- XGBoost
-- Prophet
-- SHAP
-- SQLite
-- Matplotlib
+---
 
+## ✨ Features
 
-## Project Status
+**Monitoring and forecasting**
+- Live AQI card that calls the OpenWeather API on page load
+- Interactive India map with AQI-colored city markers (click a city to select it)
+- 48-hour AQI forecast with confidence band, using the best-performing model per city
+- "Best time to go outside today" (cleanest and worst 3-hour windows, in IST)
 
-The backend data processing and machine learning pipeline have been completed successfully. Current work focuses on developing an interactive dashboard to visualize forecasts, health risk scores, model explanations, and air quality trends in a user-friendly interface.
+**Health intelligence**
+- WHO-aligned **Health Risk Index** (0–100) built from AQI, PM2.5, NO₂ and O₃
+- Advisories for **children, the elderly, and asthmatic individuals**
+- Alert banner when air quality turns severe
+
+**Explainable AI**
+- "Factors Driving Today's Prediction" panel showing SHAP feature importance per city
+
+**Analytics**
+- Historical trends (7 days / 30 days / 90 days / 1 year)
+- Multi-city comparison (2–5 cities side by side)
+- Zonal analysis (North, South, East, West, Northeast, Central)
+- City leaderboard (Top 5 cleanest and most polluted)
+- Hourly heatmaps, monthly trends, and a model performance table
+- Live monitoring table with CSV export
+
+**Usability**
+- Role-based views: General Public, Researcher, Healthcare Worker
+- Responsive layout for desktop and mobile
+- One-click data refresh that re-runs the entire pipeline
+
+---
+
+## 🧠 Machine Learning Pipeline
+
+| Component | Model | Purpose |
+|---|---|---|
+| Forecasting | **Facebook Prophet** | 48-hour AQI forecast curve, tuned per city |
+| Benchmark regression | **XGBoost Regressor** | 24-hour-ahead AQI prediction, benchmarked against Prophet |
+| Classification | **XGBoost Classifier** | Next-day category: Good / Fair / Moderate / Poor / Hazardous |
+| Explainability | **SHAP (TreeExplainer)** | Per-feature contribution to each prediction |
+| Risk scoring | Rule-based, WHO 2021 thresholds | 0–100 Health Risk Index + demographic flags |
+
+**Feature engineering:** hour, day of week, month, weekend flag, AQI lags (1h / 3h / 24h), rolling AQI means (6h / 24h), and weather variables (temperature, humidity, wind speed, wind direction, rainfall).
+
+**Validation:** models were evaluated on a held-out final 48-hour window per city, using MAE and RMSE for regression and accuracy and F1 for classification.
+
+### Results
+
+| Metric | Result |
+|---|---|
+| Prophet average MAE (1–5 AQI scale) | ~0.52 |
+| XGBoost Regressor average MAE | ~0.43 |
+| XGBoost vs Prophet (backtest) | XGBoost better in 8 of 15 cities |
+| XGBoost Classifier average accuracy (5 classes) | ~64% (random baseline: 20%) |
+| XGBoost Classifier macro F1 | ~0.50 |
+| Top SHAP features | PM2.5, PM10, 24-hour rolling AQI |
+
+> **Note:** the live 48-hour forecast on the dashboard is generated by Prophet, which can project forward without knowing future feature values. XGBoost Regressor is used for benchmarking and model selection. Some classifier scores (for example Mumbai, Bengaluru, Hyderabad and Pune at 100%) are inflated because the short test window contained only one category.
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Tools |
+|---|---|
+| Language | Python 3.11 |
+| Data sources | OpenWeather Air Pollution API, Open-Meteo Archive API |
+| Data handling | pandas, NumPy, requests, python-dotenv |
+| Storage | SQLite (raw and cleaned databases) |
+| Forecasting | Prophet |
+| Machine learning | XGBoost, scikit-learn |
+| Explainability | SHAP |
+| Visualization | Plotly, Folium, Matplotlib, Seaborn |
+| Dashboard | Streamlit, streamlit-folium |
+| Deployment | Streamlit Community Cloud, GitHub |
+
+---
+
+## 🏗️ Architecture
+
+```
+OpenWeather (AQI)  ┐
+                   ├─► collect.py ─► vayu.db (raw)
+Open-Meteo (Wx)    ┘                     │
+                                    clean.py
+                                         ▼
+                                  vayu_clean.db
+                                         │
+                                   features.py
+                                         ▼
+        ┌────────────────────┬───────────┴──────────┬───────────────────┐
+  prophet_model.py   xgboost_regressor.py   xgboost_classifier.py   health_risk.py
+        │                    │                     │                   │
+        └────────────────────┴──────────┬──────────┴───────────────────┘
+                                        ▼
+                             Streamlit dashboard
+```
+
+---
+
+## 📁 Project Structure
+
+```
+vayu/
+├── data/                        # SQLite databases (raw + cleaned)
+├── notebooks/
+│   └── 01_eda.ipynb             # Exploratory data analysis
+├── src/
+│   ├── database.py              # DB schema and helpers
+│   ├── collect.py               # API data collection
+│   ├── clean.py                 # Data cleaning and validation
+│   ├── features.py              # Merge + feature engineering
+│   ├── prophet_model.py         # Prophet forecasting
+│   ├── xgboost_regressor.py     # XGBoost regression benchmark
+│   ├── xgboost_classifier.py    # XGBoost classifier + SHAP
+│   ├── forecast_model_comparison.py  # Best-model selection per city
+│   ├── health_risk.py           # Health Risk Index + advisories
+│   └── inspect_db.py            # Raw vs clean comparison report
+├── dashboard/
+│   ├── app.py                   # Streamlit app
+│   ├── data_loader.py           # Queries and live API calls
+│   └── styles.py                # Custom CSS
+├── requirements.txt
+└── README.md
+```
+
+---
+
+## 🚀 Run Locally
+
+**1. Clone and set up**
+```bash
+git clone https://github.com/bishallaha/vayu.git
+cd vayu
+python -m venv .venv
+.venv\Scripts\activate          # Windows
+# source .venv/bin/activate     # Mac/Linux
+pip install -r requirements.txt
+```
+
+**2. Add your API key** — create a `.env` file in the project root:
+```
+OPENWEATHER_API_KEY=your_key_here
+```
+Get a free key at [openweathermap.org](https://openweathermap.org/api). Open-Meteo needs no key.
+
+**3. Build the data pipeline** (run in order)
+```bash
+python src/collect.py
+python src/clean.py
+python src/features.py
+python src/prophet_model.py
+python src/xgboost_regressor.py
+python src/xgboost_classifier.py
+python src/forecast_model_comparison.py
+python src/health_risk.py
+```
+
+**4. Launch the dashboard**
+```bash
+streamlit run dashboard/app.py
+```
+It opens at `http://localhost:8501`.
+
+---
+
+## ⚠️ Limitations
+
+- Trained on **one year** of API-sourced data, not multi-year certified sensor data
+- AQI comes from OpenWeather's modeled estimates, not CPCB regulatory-grade monitors
+- Class imbalance in the classifier is only **partially** addressed (balanced sample weighting, not synthetic oversampling)
+- Forecast error is higher for irregular cities (Guwahati, Shillong)
+- Historical weather from Open-Meteo has a **~2-day publishing lag**, so the merged historical dataset trails "now" by about two days. The live AQI card is unaffected.
+- The Health Risk Index is WHO-threshold-informed but **not clinically validated**
+- On free hosting, data refreshed from the dashboard does not persist across app restarts
+
+VAYU is a methodologically sound **prototype**, not a certified public health tool. Do not use it for medical decisions.
+
+---
+
+## 🔮 Future Work
+
+- Cluster-aware synthetic oversampling (SMOTE) to improve classifier accuracy on rare categories
+- Multi-year training data and CPCB ground-sensor integration
+- XGBoost forward forecasting using a weather forecast feed
+- Scheduled automatic retraining (GitHub Actions)
+- Alerts for hazardous thresholds
+- Clinical validation of the Health Risk Index
+
+---
+
+## 📚 Key References
+
+- Zounemat-Kermani et al. (2025). *AI-driven Framework for Personalised Health Response.* arXiv.
+- Wang & Du (2026). *Nowcasting PM2.5 in Beijing Using Synchronous Covariates and Lagged Features.* arXiv.
+- Sidhu, Balogun & Oseni (2024). *Predictive Modelling of AQI Across Diverse Cities and States of India.* arXiv.
+- Gondal et al. (2026). *Interpretable PM2.5 Forecasting for Urban Air Quality.* arXiv.
+- Yang et al. (2024). *Air Quality Prediction and Ranking Assessment Based on Bootstrap-XGBoost.* Atmosphere, 15(8), 925.
+- Ravindiran et al. (2026). *Cluster-Aware Synthetic Resampling for Multi-Class AQI Classification.* Environmental Monitoring and Assessment.
+- Lundberg & Lee (2017). *A Unified Approach to Interpreting Model Predictions.* NeurIPS 30.
+- Singh et al. (2026). *Ensemble Learning for AQI Prediction with SHAP-Based Interpretability.* Scientific Reports.
+- World Health Organization (2021). *WHO Global Air Quality Guidelines.*
+
+---
+
+## 👤 Author
+
+**Bishal Laha**
+Built as part of the IDEAS – ISI Kolkata Summer Internship 2026.
+GitHub: [@bishallaha](https://github.com/bishallaha)
+
+---
+
+*Data sources: OpenWeather and Open-Meteo. VAYU (वायु) is Sanskrit for "air" or "wind."*
